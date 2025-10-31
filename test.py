@@ -296,17 +296,9 @@ elif st.session_state.selected_category is None:
 else:
     # 사이드바에 하위 카테고리 표시
     with st.sidebar:
-        # 이 부분이 카테고리 상세 페이지와 챗봇 페이지에서 모두 "Home 화면 돌아가기" 기능을 수행하도록 유지됩니다.
-        if st.button("⬅️ 메인으로 돌아가기", use_container_width=True, type="primary"):
-            st.session_state.selected_category = None
-            st.session_state.selected_category = None # 불필요한 중복 제거
-            st.session_state.selected_subcategory = None
-            st.rerun()
+        st.title("📋 하위 카테고리")
         
         st.markdown("---")
-        
-        # 하위 카테고리 제목
-        st.title("📋 하위 카테고리")
         
         subcategories = categories[st.session_state.selected_category]
         
@@ -320,8 +312,17 @@ else:
                 st.session_state.selected_subcategory = subcategory
                 st.rerun()
     
-    # 메인 컨텐츠 영역
-    st.title(st.session_state.selected_category)
+    # 메인 컨텐츠 영역 - 제목과 HOME 버튼을 같은 줄에 배치
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        st.title(st.session_state.selected_category)
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("🏠 HOME", key="home_btn", type="secondary"):
+            st.session_state.selected_category = None
+            st.session_state.selected_subcategory = None
+            st.rerun()
+    
     st.markdown("---")
     
     if st.session_state.selected_subcategory:
