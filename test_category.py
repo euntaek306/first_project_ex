@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 
 # .env 파일 로드W
-load_dotenv(override=True)
+load_dotenv(overrside=True)
 
 # 환경변수 불러오기
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
