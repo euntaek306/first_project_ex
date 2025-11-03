@@ -1,6 +1,6 @@
 """
-마라톤 사진 검색 플랫폼 - UI/UX 프로토타입
-이용자가 대회를 선택하고 사진을 업로드하면 코스 위에 유사한 사진을 추천
+마라톤 사진 검색 플랫폼
+대회 선택 → 사진 업로드 → 새 화면에서 코스 지도 + 유사 사진 표시
 """
 
 import streamlit as st
@@ -13,113 +13,93 @@ st.set_page_config(
     page_title="마라톤 사진 검색",
     page_icon="🏃‍♂️",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 # ==========================================
-# CSS 스타일
+# 간결한 CSS 스타일
 # ==========================================
 st.markdown("""
 <style>
     /* 전체 배경 */
     .main {
-        background-color: #f8f9fa;
+        background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
     }
     
-    /* 사이드바 스타일 */
-    [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 2px solid #e9ecef;
+    /* 드롭다운 스타일 */
+    .stSelectbox {
+        font-size: 18px;
     }
     
-    /* 대회 선택 버튼 스타일 */
-    .tournament-card {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        border: 2px solid #e9ecef;
-        margin-bottom: 15px;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-    
-    .tournament-card:hover {
-        border-color: #4CAF50;
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
-        transform: translateY(-2px);
-    }
-    
-    .tournament-card.active {
-        border-color: #4CAF50;
-        background: #f1f8f4;
-    }
-    
-    /* 코스 지도 영역 */
-    .course-map {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        min-height: 600px;
-        border: 2px solid #e9ecef;
-    }
-    
-    /* 업로드 영역 */
-    .upload-area {
-        background: white;
-        border-radius: 12px;
-        padding: 30px;
-        border: 3px dashed #dee2e6;
-        text-align: center;
-        min-height: 300px;
-        transition: all 0.3s;
-    }
-    
-    .upload-area:hover {
-        border-color: #4CAF50;
-        background: #f8fff9;
-    }
-    
-    /* 사진 핀 스타일 */
-    .photo-pin {
-        background: white;
-        border: 3px solid #4CAF50;
-        border-radius: 12px;
-        padding: 10px;
-        margin: 10px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-    
-    .photo-pin:hover {
-        transform: scale(1.05);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.2);
-    }
-    
-    /* 헤더 */
-    h1 {
-        color: #2c3e50;
-        font-weight: 700;
-    }
-    
-    h2, h3 {
-        color: #34495e;
-    }
-    
-    /* 버튼 */
+    /* 버튼 스타일 */
     .stButton>button {
-        background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+        background: linear-gradient(90deg, #4a90e2 0%, #50e3c2 100%);
         color: white;
+        font-size: 18px;
+        font-weight: bold;
+        padding: 15px 30px;
+        border-radius: 12px;
         border: none;
-        padding: 12px 24px;
-        border-radius: 8px;
-        font-weight: 600;
+        width: 100%;
         transition: all 0.3s;
     }
     
     .stButton>button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+    }
+    
+    /* 업로드 영역 */
+    .stFileUploader {
+        border: 2px dashed #4a90e2;
+        border-radius: 12px;
+        padding: 30px;
+        background: white;
+    }
+    
+    /* 카드 스타일 */
+    .info-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 4px solid #4a90e2;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    /* 사진 카드 */
+    .photo-card {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        border: 2px solid #e0e7ff;
+        text-align: center;
+        transition: all 0.3s;
+        cursor: pointer;
+    }
+    
+    .photo-card:hover {
+        transform: scale(1.05);
+        border-color: #4a90e2;
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+    }
+    
+    /* 제목 */
+    h1 {
+        color: #2c3e50;
+        text-align: center;
+        font-size: 48px;
+        margin-bottom: 30px;
+    }
+    
+    h2 {
+        color: #34495e;
+        font-size: 28px;
+    }
+    
+    h3 {
+        color: #4a90e2;
+        font-size: 22px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -130,14 +110,14 @@ st.markdown("""
 if 'selected_tournament' not in st.session_state:
     st.session_state.selected_tournament = None
 
-if 'uploaded_photo' not in st.session_state:
-    st.session_state.uploaded_photo = None
+if 'uploaded_image' not in st.session_state:
+    st.session_state.uploaded_image = None
 
-if 'show_recommendations' not in st.session_state:
-    st.session_state.show_recommendations = False
+if 'show_results' not in st.session_state:
+    st.session_state.show_results = False
 
 # ==========================================
-# 대회 데이터 (예시)
+# 대회 데이터
 # ==========================================
 tournaments = {
     "서울 국제 마라톤": {
@@ -145,268 +125,225 @@ tournaments = {
         "distance": "42.195km",
         "participants": "30,000명",
         "course": "잠실종합운동장 → 광화문 → 남산 → 한강 → 잠실",
-        "icon": "🏃‍♂️"
+        "icon": "🏃‍♂️",
+        "color": "#FF6B6B"
     },
     "춘천 마라톤": {
         "date": "2024년 10월 20일",
         "distance": "42.195km",
         "participants": "15,000명",
         "course": "의암호 → 소양강 → 춘천시가지 → 의암호",
-        "icon": "🏔️"
+        "icon": "🏔️",
+        "color": "#4ECDC4"
     },
     "제주 국제 마라톤": {
         "date": "2024년 11월 5일",
         "distance": "42.195km",
         "participants": "12,000명",
         "course": "제주시 → 애월 → 한림 → 제주시",
-        "icon": "🌊"
+        "icon": "🌊",
+        "color": "#45B7D1"
     },
     "부산 국제 마라톤": {
         "date": "2024년 4월 14일",
         "distance": "42.195km",
         "participants": "25,000명",
         "course": "광안리 → 해운대 → 마린시티 → 광안리",
-        "icon": "🌉"
+        "icon": "🌉",
+        "color": "#FFA07A"
     }
 }
 
 # ==========================================
-# 사이드바: 대회 선택
+# 페이지 1: 대회 선택 및 사진 업로드
 # ==========================================
-with st.sidebar:
-    st.title("🏃‍♂️ 대회 선택")
-    st.markdown("참가한 마라톤 대회를 선택하세요")
+if not st.session_state.show_results:
+    
+    # 타이틀
+    st.title("🏃 High 러너스 🏃")
+    st.caption("AI가 마라톤 코스에서 당신의 사진을 찾아드립니다")
     st.markdown("---")
     
-    for tournament_name, info in tournaments.items():
-        # 대회 카드 생성
-        is_selected = st.session_state.selected_tournament == tournament_name
-        
-        if st.button(
-            f"{info['icon']} {tournament_name}",
-            key=tournament_name,
-            use_container_width=True,
-            type="primary" if is_selected else "secondary"
-        ):
-            st.session_state.selected_tournament = tournament_name
-            st.session_state.show_recommendations = False
-            st.rerun()
-        
-        if is_selected:
-            st.markdown(f"""
-            <div style='background: #f1f8f4; padding: 10px; border-radius: 8px; margin-bottom: 15px;'>
-                <small>
-                📅 <b>일시:</b> {info['date']}<br>
-                📏 <b>거리:</b> {info['distance']}<br>
-                👥 <b>참가자:</b> {info['participants']}
-                </small>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown("<br>", unsafe_allow_html=True)
+    # 중앙 정렬 레이아웃
+    col1, col2, col3 = st.columns([1, 80, 1])
     
-    st.markdown("---")
-    st.caption("💡 대회를 선택하면 코스 지도가 표시됩니다")
-
-# ==========================================
-# 메인 화면: 좌우 분할
-# ==========================================
-
-# 헤더
-st.title("🏃‍♂️ 마라톤 사진 검색 플랫폼")
-st.caption("AI가 당신의 마라톤 사진을 코스 위에서 찾아드립니다")
-st.markdown("---")
-
-# 좌우 분할 (6:4 비율)
-left_col, right_col = st.columns([6, 4])
-
-# ==========================================
-# 왼쪽: 코스 지도 + 추천 사진
-# ==========================================
-with left_col:
-    st.markdown("### 🗺️ 마라톤 코스")
-    
-    if st.session_state.selected_tournament:
-        selected_info = tournaments[st.session_state.selected_tournament]
-        
-        # 대회 정보 헤더
-        st.info(f"""
-        **{selected_info['icon']} {st.session_state.selected_tournament}**  
-        📍 코스: {selected_info['course']}
-        """)
-        
-        # 코스 지도 영역 (실제로는 지도 API 사용)
-        st.markdown("""
-        <div class="course-map">
-            <div style='text-align: center; padding: 50px 0;'>
-                <h2 style='color: #95a5a6; margin-bottom: 20px;'>🗺️</h2>
-                <h3 style='color: #95a5a6;'>코스 지도 영역</h3>
-                <p style='color: #bdc3c7;'>(실제 구현시 Google Maps API 또는 Folium 사용)</p>
-                <br><br>
-                <div style='display: flex; justify-content: space-around; margin-top: 40px;'>
-                    <div style='text-align: center;'>
-                        <div style='width: 60px; height: 60px; background: #e8f5e9; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 24px;'>
-                            🏁
-                        </div>
-                        <p style='margin-top: 10px; color: #666;'>출발점</p>
-                    </div>
-                    <div style='text-align: center;'>
-                        <div style='width: 60px; height: 60px; background: #fff3e0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 24px;'>
-                            📸
-                        </div>
-                        <p style='margin-top: 10px; color: #666;'>중간 지점</p>
-                    </div>
-                    <div style='text-align: center;'>
-                        <div style='width: 60px; height: 60px; background: #fce4ec; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 24px;'>
-                            🎯
-                        </div>
-                        <p style='margin-top: 10px; color: #666;'>도착점</p>
-                    </div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # 추천 사진이 있을 때
-        if st.session_state.show_recommendations:
-            st.markdown("---")
-            st.markdown("#### 📍 코스 상 유사한 사진들")
-            st.success("✨ AI가 찾은 유사한 사진 5장")
-            
-            # 추천 사진 표시 (3개씩)
-            rec_cols = st.columns(3)
-            
-            for i in range(5):
-                col = rec_cols[i % 3]
-                with col:
-                    st.markdown(f"""
-                    <div class="photo-pin">
-                        <div style='background: #f0f0f0; height: 150px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px;'>
-                            <span style='font-size: 48px;'>🖼️</span>
-                        </div>
-                        <p style='margin: 0; font-size: 14px; color: #666;'>
-                            <b>📍 {i*8 + 5}km 지점</b><br>
-                            유사도: {95 - i*3}%
-                        </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-    else:
-        # 대회 미선택 시
-        st.info("👈 왼쪽 사이드바에서 대회를 선택하세요")
-        st.markdown("""
-        <div style='text-align: center; padding: 100px 50px; color: #95a5a6;'>
-            <h1 style='font-size: 80px; margin-bottom: 20px;'>🏃‍♂️</h1>
-            <h2>마라톤 대회를 선택해주세요</h2>
-            <p>대회를 선택하면 코스 지도가 표시됩니다</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-# ==========================================
-# 오른쪽: 사진 업로드
-# ==========================================
-with right_col:
-    st.markdown("### 📤 내 사진 업로드")
-    
-    if st.session_state.selected_tournament:
-        st.info("📸 마라톤 사진을 업로드하면 AI가 비슷한 사진을 찾아드립니다")
-        
-        # 파일 업로드
-        uploaded_file = st.file_uploader(
-            "사진을 선택하세요",
-            type=['png', 'jpg', 'jpeg'],
-            key="user_photo_upload",
-            label_visibility="collapsed"
+    with col2:
+        # 1단계: 대회 선택
+        st.markdown("### 1️⃣ 대회 선택")
+        selected = st.selectbox(
+            "참가한 마라톤 대회를 선택하세요",
+            options=["대회를 선택해주세요"] + list(tournaments.keys()),
+            key="tournament_selectbox"
         )
         
-        if uploaded_file:
-            # 업로드된 사진 미리보기
-            st.markdown("#### 🖼️ 업로드한 사진")
-            image = Image.open(uploaded_file)
-            st.image(image, use_container_width=True, caption=uploaded_file.name)
+        # 대회가 선택되면 세션에 저장
+        if selected != "대회를 선택해주세요":
+            st.session_state.selected_tournament = selected
             
-            st.markdown("---")
+            # # 선택된 대회 정보 표시
+            # info = tournaments[selected]
+            # st.markdown(f"""
+            # <div class="info-card">
+            #     <h3>{info['icon']} {selected}</h3>
+            #     <p style='margin: 5px 0; color: #666;'>
+            #         📅 <b>일시:</b> {info['date']}<br>
+            #         📏 <b>거리:</b> {info['distance']}<br>
+            #         👥 <b>참가자:</b> {info['participants']}<br>
+            #         📍 <b>코스:</b> {info['course']}
+            #     </p>
+            # </div>
+            # """, unsafe_allow_html=True)
             
-            # 검색 옵션
-            st.markdown("#### ⚙️ 검색 옵션")
+            # st.markdown("---")
             
-            # 코스 구간 선택
-            course_section = st.selectbox(
-                "📍 코스 구간 (선택사항)",
-                ["전체 코스", "0-10km", "10-20km", "20-30km", "30-42km"]
+            # 2단계: 사진 업로드
+            st.markdown("### 2️⃣ 사진 업로드")
+            uploaded_file = st.file_uploader(
+                "Drag and drop file here",
+                type=['png', 'jpg', 'jpeg'],
+                key="photo_uploader",
+                help="마라톤 사진을 업로드하세요 (최대 200MB)"
             )
             
-            # 유사도 임계값
-            similarity = st.slider(
-                "🎯 최소 유사도",
-                min_value=70,
-                max_value=100,
-                value=85,
-                help="높을수록 더 비슷한 사진만 표시됩니다"
-            )
-            
-            st.markdown("---")
-            
-            # 검색 버튼
-            if st.button("🔍 유사 사진 검색", type="primary", use_container_width=True):
-                with st.spinner("🤖 AI가 코스 위에서 유사한 사진을 찾고 있습니다..."):
-                    import time
-                    time.sleep(2)  # 시뮬레이션
-                    st.session_state.uploaded_photo = image
-                    st.session_state.show_recommendations = True
-                    st.success("✅ 5장의 유사한 사진을 찾았습니다!")
-                    st.balloons()
-                    time.sleep(1)
+            # 사진이 업로드되면
+            if uploaded_file:
+                # 이미지 읽기 및 세션에 저장
+                image = Image.open(uploaded_file)
+                st.session_state.uploaded_image = image
+                
+                # # 미리보기 표시
+                # st.success(f"✅ {uploaded_file.name} 업로드 완료!")
+                # st.image(image, caption="업로드된 사진", use_container_width=True)
+                
+                # st.markdown("---")
+                
+                # 검색 버튼
+                if st.button("🔍 코스 및 추천 사진 보기", type="primary"):
+                    st.session_state.show_results = True
                     st.rerun()
+        
         else:
-            # 업로드 전 안내
-            st.markdown("""
-            <div class="upload-area">
-                <div style='padding: 50px 20px;'>
-                    <div style='font-size: 64px; margin-bottom: 20px;'>📤</div>
-                    <h3 style='color: #666; margin-bottom: 10px;'>사진을 업로드하세요</h3>
-                    <p style='color: #999;'>JPG, PNG 형식 지원</p>
-                    <br>
-                    <small style='color: #bbb;'>위 버튼을 클릭하여 파일을 선택하세요</small>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-    
-    else:
-        # 대회 미선택 시
-        st.warning("⚠️ 먼저 대회를 선택해주세요")
-        st.markdown("""
-        <div style='text-align: center; padding: 50px 20px; color: #95a5a6;'>
-            <div style='font-size: 48px; margin-bottom: 20px;'>🏃‍♂️</div>
-            <p>대회를 먼저 선택하면<br>사진을 업로드할 수 있습니다</p>
-        </div>
-        """, unsafe_allow_html=True)
+            st.info("👆 위에서 대회를 먼저 선택해주세요")
 
 # ==========================================
-# 하단 안내
+# 페이지 2: 코스 지도 + 유사 사진
+# ==========================================
+else:
+    # 선택된 대회 정보 가져오기
+    tournament_name = st.session_state.selected_tournament
+    tournament_info = tournaments[tournament_name]
+    
+    # 상단 헤더
+    st.markdown(f"""
+    <div style='text-align: center; padding: 20px; background: white; border-radius: 12px; margin-bottom: 30px;'>
+        <h1 style='margin: 0; font-size: 36px;'>{tournament_info['icon']} {tournament_name}</h1>
+        
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # 좌우 분할 (6:4 비율)
+    left_col, right_col = st.columns([7, 3])
+    
+    # ==========================================
+    # 왼쪽: 코스 지도 영역
+    # ==========================================
+    with left_col:
+        st.markdown("### 🗺️ 마라톤 코스")
+        
+        # 대회 정보 카드
+        st.markdown(f"""
+        <div class="info-card">
+            <p style='margin: 0; line-height: 1.8;'>
+                📅 <b>일시:</b> {tournament_info['date']}<br>
+                📏 <b>거리:</b> {tournament_info['distance']}<br>
+                📍 <b>코스:</b> {tournament_info['course']}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # 코스 지도 영역 (플레이스홀더)
+        st.markdown("""
+        <div style='background: white; border-radius: 12px; padding: 40px; text-align: center; min-height: 500px; border: 2px solid #e0e7ff;'>
+            <div style='padding-top: 100px;'>
+                <h2 style='color: #4a90e2; font-size: 64px; margin-bottom: 20px;'>🗺️</h2>
+                <h3 style='color: #666;'>마라톤 코스 지도</h3>
+                <p style='color: #999; margin-top: 20px;'>실제 구현시 Google Maps API 또는 Folium 사용</p>
+                <br><br>
+                <div style='display: flex; justify-content: space-around; margin-top: 60px;'>
+                    <div>
+                        <div style='width: 80px; height: 80px; background: #e8f5e9; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 36px;'>🏁</div>
+                        <p style='margin-top: 15px; color: #666; font-weight: bold;'>출발</p>
+                    </div>
+                    <div>
+                        <div style='width: 80px; height: 80px; background: #fff3e0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 36px;'>📸</div>
+                        <p style='margin-top: 15px; color: #666; font-weight: bold;'>중간</p>
+                    </div>
+                    <div>
+                        <div style='width: 80px; height: 80px; background: #fce4ec; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 36px;'>🎯</div>
+                        <p style='margin-top: 15px; color: #666; font-weight: bold;'>도착</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # ==========================================
+    # 오른쪽: 유사한 사진들
+    # ==========================================
+    with right_col:
+        # st.markdown("### 📍 코스 상 유사한 사진들")
+        
+        # 업로드한 사진 미리보기
+        if st.session_state.uploaded_image:
+            st.markdown("#### 🖼️ 검색한 사진")
+            st.image(st.session_state.uploaded_image, use_container_width=True)
+            # st.markdown("---")
+        
+    #     # AI 추천 사진
+    #     st.success("✨ AI가 찾은 유사한 사진 5장")
+        
+    #     # # 5장의 추천 사진 (2열로 배치)
+    #     # for i in range(5):
+    #     #     st.markdown(f"""
+    #     #     <div class="photo-card">
+    #     #         <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+    #     #                     height: 200px; 
+    #     #                     border-radius: 8px; 
+    #     #                     display: flex; 
+    #     #                     align-items: center; 
+    #     #                     justify-content: center; 
+    #     #                     margin-bottom: 12px;'>
+    #     #             <span style='font-size: 64px;'>🖼️</span>
+    #     #         </div>
+    #     #         <div style='text-align: left; padding: 5px;'>
+    #     #             <p style='margin: 0; font-size: 16px; font-weight: bold; color: #2c3e50;'>
+    #     #                 📍 {i*8 + 5}km 지점
+    #     #             </p>
+    #     #             <p style='margin: 5px 0 0 0; font-size: 14px; color: #4a90e2;'>
+    #     #                 유사도: {95 - i*2}%
+    #     #             </p>
+    #     #         </div>
+    #     #     </div>
+    #     #     """, unsafe_allow_html=True)
+            
+    #     #     st.markdown("<br>", unsafe_allow_html=True)
+    
+    # # ==========================================
+    # # 하단: 뒤로 가기 버튼
+    # # ==========================================
+    # st.markdown("---")
+    
+    col1, col2, col3 = st.columns([5, 10, 5])
+    with col2:
+        if st.button("◀️ 처음으로 돌아가기", use_container_width=True):
+            # 세션 초기화
+            st.session_state.show_results = False
+            st.session_state.selected_tournament = None
+            st.session_state.uploaded_image = None
+            st.rerun()
+
+# ==========================================
+# 하단 푸터
 # ==========================================
 st.markdown("---")
-st.markdown("""
-<div style='background: white; padding: 20px; border-radius: 12px; text-align: center;'>
-    <h4 style='color: #2c3e50; margin-bottom: 15px;'>💡 사용 방법</h4>
-    <div style='display: flex; justify-content: space-around; text-align: center;'>
-        <div style='flex: 1;'>
-            <div style='font-size: 36px; margin-bottom: 10px;'>1️⃣</div>
-            <p style='color: #666;'><b>대회 선택</b><br>사이드바에서 참가한 대회 클릭</p>
-        </div>
-        <div style='flex: 1;'>
-            <div style='font-size: 36px; margin-bottom: 10px;'>2️⃣</div>
-            <p style='color: #666;'><b>사진 업로드</b><br>오른쪽에서 마라톤 사진 업로드</p>
-        </div>
-        <div style='flex: 1;'>
-            <div style='font-size: 36px; margin-bottom: 10px;'>3️⃣</div>
-            <p style='color: #666;'><b>검색 실행</b><br>AI가 코스 위에서 유사한 사진 찾기</p>
-        </div>
-        <div style='flex: 1;'>
-            <div style='font-size: 36px; margin-bottom: 10px;'>4️⃣</div>
-            <p style='color: #666;'><b>결과 확인</b><br>왼쪽 지도에서 추천 사진 보기</p>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+st.caption("💡 Tip: 정확한 검색을 위해 선명한 사진을 업로드해주세요")
