@@ -116,6 +116,8 @@ if 'uploaded_image' not in st.session_state:
 if 'show_results' not in st.session_state:
     st.session_state.show_results = False
 
+if 'selected_photo' not in st.session_state:
+    st.session_state.selected_photo = None
 # ==========================================
 # 대회 데이터
 # ==========================================
@@ -232,6 +234,8 @@ else:
     # 선택된 대회 정보 가져오기
     tournament_name = st.session_state.selected_tournament
     tournament_info = tournaments[tournament_name]
+
+    
     
     # 상단 헤더
     st.markdown(f"""
@@ -253,7 +257,7 @@ else:
         # 대회 정보 카드
         st.markdown(f"""
         <div class="info-card">
-            <p style='margin: 0; line-height: 1.8;'>
+            <p style='margin: 0; line-height: 1.4;'>
                 📅 <b>일시:</b> {tournament_info['date']}<br>
                 📏 <b>거리:</b> {tournament_info['distance']}<br>
                 📍 <b>코스:</b> {tournament_info['course']}
