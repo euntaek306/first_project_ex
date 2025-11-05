@@ -13,7 +13,6 @@ from transformers import CLIPProcessor, CLIPModel
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import io
-import zipfile 
 from datetime import datetime, timedelta
 import random
 import base64
@@ -299,9 +298,7 @@ st.markdown("""
         border-radius: 12px;
         transition: all 0.3s;
     }
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(74, 144, 226, 0.4);
+   
     }
     /* 구매 버튼 스타일 */
     .purchase-btn-style {
@@ -323,11 +320,7 @@ st.markdown("""
     div.stImage > button {
         display: none !important;
     }
-    /* Full Screen 팝업 지원 CSS */
-    @media all and (display-mode: fullscreen) {
-        .leaflet-popup-content img {
-            max-width: 100%;
-            max-height: 100vh;
+   
         }
     }
 </style>
