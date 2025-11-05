@@ -13,7 +13,7 @@ from transformers import CLIPProcessor, CLIPModel
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import io
-import zipfile # ZIP 파일 생성을 위해 추가
+import zipfile 
 from datetime import datetime, timedelta
 import random
 import base64
@@ -66,34 +66,24 @@ class ImageSimilarityFinder:
 # ==========================================
 def image_bytes_to_st_image(image_bytes, **kwargs):
     """
-    이미지 바이트 데이터를 st.image에 안전하게 표시합니다. (ImageMixin 오류 해결)
+    이미지 바이트 데이터를 st.image에 안전하게 표시합니다.
     """
-    # st.image에 PIL.Image 객체 대신 BytesIO를 직접 전달하는 방식이 더 안전함
-    # key 인수는 st.image에서 지원되지 않으므로, kwargs에서 key를 제거하거나 사용하지 않음
     st.image(io.BytesIO(image_bytes), **kwargs)
 
 
 def create_zip_of_selected_photos(photo_markers):
     """선택된 이미지들을 zip 파일로 만들어 바이트 데이터를 반환합니다."""
     
-    # 1. 인메모리 바이트 버퍼 생성
     buffer = io.BytesIO()
     
-    # 2. Zip 파일 생성
     with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        # 3. 선택된 ID를 순회하며 이미지 찾기
         for selected_id in st.session_state.selected_for_download:
-            # photo_markers는 현재 세션의 유사 사진 목록
             photo = next((p for p in photo_markers if p['id'] == selected_id), None)
             
             if photo:
-                # 파일 이름 지정 (유사도 점수 포함)
                 file_name = f"Photo_Sim_{photo.get('similarity', 0):.1f}_{photo.get('name', 'image.jpg')}"
-                
-                # Zip 파일에 추가
                 zipf.writestr(file_name, photo['image_bytes'])
             
-    # 4. 버퍼의 내용을 리셋하고 바이트 데이터 반환
     buffer.seek(0)
     return buffer.getvalue()
 
@@ -155,8 +145,7 @@ def assign_photo_locations(num_photos, coordinates, start_time):
 
 def create_course_map_with_photos(coordinates, photo_markers=None):
     """
-    GPX 코스 지도 + 사진 마커 생성 
-    (썸네일 마커, 툴팁 미리보기+풀스크린, 팝업 상세 보기 이동 버튼 포함)
+    GPX 코스 지도 + 사진 마커 생성 (Full Screen 기능 제거)
     """
     if not coordinates:
         return None
@@ -170,7 +159,6 @@ def create_course_map_with_photos(coordinates, photo_markers=None):
         tiles='CartoDB positron'
     )
     
-    # 코스 라인 및 km 마커 (생략)
     folium.PolyLine(coordinates, color='#FF4444', weight=5, opacity=0.8, popup='마라톤 코스').add_to(m)
     folium.Marker(coordinates[0], popup='🏁 출발', icon=folium.Icon(color='green', icon='play', prefix='fa')).add_to(m)
     folium.Marker(coordinates[-1], popup='🎯 도착', icon=folium.Icon(color='red', icon='stop', prefix='fa')).add_to(m)
@@ -180,26 +168,22 @@ def create_course_map_with_photos(coordinates, photo_markers=None):
         if idx < total_points:
             folium.CircleMarker(location=coordinates[idx], radius=8, popup=f'{km}km 지점', color='blue', fill=True, fillColor='lightblue', fillOpacity=0.7).add_to(m)
 
-    # 사진 마커 추가
     if photo_markers:
         for photo in photo_markers:
-            # 마커에는 썸네일 사용
             img_base64 = photo.get('thumbnail_base64', '') 
             similarity_percent = photo['similarity']
             photo_unique_id = photo['id']
 
-            # 유사도에 따른 테두리 색상 및 두께 설정
             if similarity_percent >= 90:
-                border_style = '4px solid #FF0000' # 빨간색 강조
+                border_style = '4px solid #FF0000'
                 marker_color = 'red'
             elif similarity_percent >= 80:
-                border_style = '2px solid #FFA500' # 주황색 강조
+                border_style = '2px solid #FFA500'
                 marker_color = 'orange'
             else:
-                border_style = '1px solid #4a90e2' # 일반 파란색
+                border_style = '1px solid #4a90e2'
                 marker_color = 'blue'
             
-            # 커스텀 HTML 아이콘 (Base64 썸네일 이미지)
             icon_html = f"""
             <div style="
                 width: 30px; height: 30px; 
@@ -220,11 +204,10 @@ def create_course_map_with_photos(coordinates, photo_markers=None):
                 html=icon_html 
             )
 
-            # ツールチップ HTML (미리보기 + 풀스크린 기능)
+            # ツールチップ HTML (Full Screen 기능 제거)
             tooltip_image_html = f"""
             <div style='width: 150px; font-family: Arial; text-align: center; user-select: none;'>
                 <img src='data:image/png;base64,{img_base64}' 
-                     onclick="window.open('data:image/png;base64,{img_base64}', '_blank', 'fullscreen=yes');"
                      style='width: 100%; border-radius: 8px; border: {border_style}; cursor: pointer; margin-bottom: 5px;'>
                 <div style='font-size: 12px; color: #333;'>
                     <b>{photo['name']}</b><br>
@@ -233,7 +216,7 @@ def create_course_map_with_photos(coordinates, photo_markers=None):
             </div>
             """
             
-            # 팝업 HTML (상세 보기 버튼 포함 -> Session State 변경 트리거)
+            # 팝업 HTML (Full Screen 기능 제거 및 상세 보기 버튼 유지)
             popup_html = f"""
             <div style='width: 250px; font-family: Arial;'>
                 <img src='data:image/png;base64,{img_base64}'  
@@ -291,7 +274,6 @@ def initialize_session_state():
     if 'show_detail_view' not in st.session_state:
         st.session_state.show_detail_view = False
     
-    # 📌 다운로드를 위해 선택된 사진의 ID (문자열)를 저장할 집합(Set) 초기화
     if 'selected_for_download' not in st.session_state:
         st.session_state.selected_for_download = set()
 
@@ -302,9 +284,8 @@ def initialize_session_state():
 initialize_session_state()
 
 # ==========================================
-# CSS 스타일 (생략)
+# CSS 스타일
 # ==========================================
-# ... (CSS 스타일 코드는 그대로 유지) ...
 st.markdown("""
 <style>
     .main { background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%); }
@@ -338,7 +319,10 @@ st.markdown("""
         line-height: 30px; /* 버튼 텍스트 중앙 정렬 */
         text-decoration: none;
     }
-
+    /* st.image 기본 풀스크린 버튼 숨기기 */
+    div.stImage > button {
+        display: none !important;
+    }
     /* Full Screen 팝업 지원 CSS */
     @media all and (display-mode: fullscreen) {
         .leaflet-popup-content img {
@@ -434,7 +418,7 @@ if mode == "📸 작가 모드":
 
                             # 작은 썸네일 생성 (마커 및 리스트용 - 용량 대폭 감소)
                             thumbnail = image.copy()
-                            thumbnail.thumbnail((200, 200)) # LANCZOS는 Streamlit 환경에서 불안정할 수 있어 제거
+                            thumbnail.thumbnail((200, 200))
                             thumb_byte_arr = io.BytesIO()
                             thumbnail.save(thumb_byte_arr, format='JPEG', quality=70)
                             thumb_base64 = base64.b64encode(thumb_byte_arr.getvalue()).decode()
@@ -442,7 +426,7 @@ if mode == "📸 작가 모드":
                             st.session_state.saved_photos.append({
                                 'name': file.name,
                                 'image_bytes': image_bytes,
-                                'thumbnail_base64': thumb_base64, # 📌 마커/리스트용
+                                'thumbnail_base64': thumb_base64,
                                 'embedding': embedding,
                                 'lat': location['lat'],
                                 'lon': location['lon'],
@@ -469,7 +453,6 @@ if mode == "📸 작가 모드":
 else:
     if not st.session_state.show_results:
         # 페이지 1: 대회 선택 + 사진 업로드 (생략)
-        # ... (이전 코드와 동일) ...
         st.title("🏃 High 러너스 🏃")
         st.caption("AI가 마라톤 코스에서 당신의 사진을 찾아드립니다")
         st.markdown("---")
@@ -502,7 +485,7 @@ else:
                         st.session_state.show_results = True
                         st.session_state.detailed_photo_id = None
                         st.session_state.show_detail_view = False 
-                        st.session_state.selected_for_download = set() # 검색 시 다운로드 목록 초기화
+                        st.session_state.selected_for_download = set()
                         st.rerun()
                 else:
                     st.info("👆 대회 선택 후, 검색할 사진을 올려주세요")
@@ -602,18 +585,27 @@ else:
 
             selected_photo = next((p for p in photo_markers if p['id'] == selected_photo_id), None)
             
-            # --- 상세 보기 화면 ---
+            # --- 상세 보기 화면 (선택된 이미지) ---
             if st.session_state.show_detail_view and selected_photo:
                 
                 st.markdown("#### ✨ 선택된 이미지 상세")
                 
-                # 📌 ImageMixin.image 오류 해결: key 제거
+                # 뒤로가기 버튼은 상단에 있으므로 생략
+                st.markdown("---")
+                
+                # 이미지 표시 (오류 해결 반영)
                 image_bytes_to_st_image(selected_photo['image_bytes'], use_container_width=True)
                 
                 st.markdown("---")
                 
-                # 작가 정보 (생략)
-                st.markdown("##### 👤 촬영자 정보")
+                # 📌 [수정] 위치 및 시간 정보 추가
+                
+                st.markdown(f"**📍 위치:** {selected_photo['km']}km 지점")
+                st.markdown(f"**📅 시간:** {selected_photo['time']}")
+                
+                # 작가 정보
+                # st.markdown("##### 👤 촬영자 정보")
+                
                 col_prof1, col_prof2 = st.columns([1, 3])
                 with col_prof1:
                     st.markdown("", unsafe_allow_html=True) 
@@ -633,7 +625,6 @@ else:
 
 
             # --- 유사 사진 목록 화면 ---
-            # --- 유사 사진 목록 화면 ---
             else:
                 st.markdown("#### 🖼️ 검색한 사진")
                 if st.session_state.uploaded_image:
@@ -643,61 +634,49 @@ else:
                 st.markdown("#### 🎯 유사한 사진 목록")
 
                 # ----------------------------------------------------------------------------------
-                # 📌 선택적 다운로드 버튼 및 로직
+                # 📌 다운로드 새 창 연동 버튼
                 # ----------------------------------------------------------------------------------
+                if st.session_state.selected_for_download:
+                    st.info(f"선택된 사진 {len(st.session_state.selected_for_download)}장에 대해 다운로드 페이지를 열 수 있습니다.")
+                    download_url = "https://share.streamlit.io/download-selection"
+                    
+                    st.markdown(f'<a href="{download_url}" target="_blank">'
+                                f'<button class="purchase-btn-style" style="background-color: #50e3c2;">'
+                                f'⬇️ 선택된 사진 다운로드 페이지 열기 (새 창)'
+                                f'</button></a>', unsafe_allow_html=True)
+                else:
+                    st.info("다운로드/구매를 위해 사진을 선택해주세요. (각 사진 아래 체크박스 사용)")
+                
+                st.markdown("---")
+                
                 if photo_markers:
                     
-                    # 다운로드 버튼
-                    if st.session_state.selected_for_download:
-                        zip_data = create_zip_of_selected_photos(photo_markers)
-                        
-                        st.download_button(
-                            label=f"✅ 선택된 사진 {len(st.session_state.selected_for_download)}장 한 번에 저장하기",
-                            data=zip_data,
-                            file_name="marathon_photos_selected.zip",
-                            mime="application/zip",
-                            type="primary",
-                            use_container_width=True
-                        )
-                    else:
-                        st.info("저장할 사진을 선택해주세요. (각 사진 아래 체크박스 사용)")
-                    
-                    st.markdown("---")
-                    
-                    # ----------------------------------------------------------------------------------
-                    # 📌 [수정] 바둑판식 레이아웃 및 작은 '보기' 버튼 적용
-                    # ----------------------------------------------------------------------------------
                     # 3열 바둑판식 레이아웃 생성
                     cols = st.columns(3)
                     
                     for i, photo in enumerate(photo_markers):
-                        # 3개씩 끊어서 컬럼에 배치
                         with cols[i % 3]: 
                             
                             def set_selected_photo_and_show_detail(photo_id):
                                 st.session_state.selected_similar_photo_id = photo_id
                                 st.session_state.show_detail_view = True 
                             
+                            # 📌 체크박스 상태 업데이트 함수 (깜빡임 제거)
                             def update_download_selection(photo_id):
                                 if st.session_state[f"select_list_{photo_id}"]:
                                     st.session_state.selected_for_download.add(photo_id)
                                 else:
                                     st.session_state.selected_for_download.discard(photo_id)
 
-                            # 이미지 표시 (바둑판식에 맞게 폭 조정)
+                            # 이미지 표시 (바둑판식)
                             image_bytes_to_st_image(photo['image_bytes'], use_container_width=True) 
 
-                            # 📌 사진 아래 정보 및 작은 버튼 배치
-                            # 체크박스와 정보, 보기 링크를 한 컨테이너에 배치
                             st.caption(f"📍 {photo['km']}km | 유사도: **<span style='color:red;'>{photo['similarity']:.1f}%</span>**", unsafe_allow_html=True)
 
-                            # 📌 '보기' 버튼을 텍스트 링크 형태로 축소
-                            # Streamlit에서는 직접 텍스트 링크 버튼을 구현하기 어려우므로, 
-                            # 클릭 이벤트를 트리거하는 작은 버튼을 사용합니다.
                             col_view, col_select = st.columns([1, 4])
 
                             with col_view:
-                                # 작은 버튼 (자그마하게 클릭 가능)
+                                # '보기' 버튼 (상세 보기 전환)
                                 if st.button("보기", key=f"list_btn_{photo['id']}", help="클릭 시 상세 화면으로 이동", type="secondary", use_container_width=True):
                                     set_selected_photo_and_show_detail(photo['id'])
                                     st.rerun()
@@ -711,10 +690,6 @@ else:
                                     on_change=update_download_selection,
                                     args=(photo['id'],)
                                 )
-
-                    # ----------------------------------------------------------------------------------
-                    # 📌 [수정] 바둑판식 레이아웃 및 작은 '보기' 버튼 적용 끝
-                    # ----------------------------------------------------------------------------------
 
                 else:
                     st.info("검색 결과를 찾을 수 없습니다.")
